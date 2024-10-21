@@ -1,0 +1,56 @@
+-- Variables for player and dash parameters
+local player = game.Players.LocalPlayer
+local dashSpeed = 120 -- Speed of the dash
+local dashDuration = 0.2 -- Duration of the dash (in seconds)
+local cooldown = 0.5 -- Cooldown between dashes (in seconds)
+
+-- Variables to track the character and humanoidRootPart
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Function to handle dashing
+local function dash()
+    local startTime = tick()
+    local dashDirection = humanoidRootPart.CFrame.lookVector -- Direction the player is facing
+    local connection
+
+    connection = game:GetService("RunService").Heartbeat:Connect(function()
+        local currentTime = tick()
+        if currentTime - startTime <= dashDuration then
+            humanoidRootPart.Velocity = dashDirection * dashSpeed
+        else
+            humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Stop dashing after the duration
+            connection:Disconnect()
+        end
+    end)
+end
+
+-- Debounce to prevent spamming
+local canDash = true
+
+-- Keybind for dashing (pressing "Q")
+local function setupDash()
+    game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Q and canDash then
+            canDash = false
+            dash()
+            wait(cooldown) -- Wait for the cooldown duration
+            canDash = true
+        end
+    end)
+end
+
+-- Function to initialize dash when character spawns or respawns
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+    setupDash() -- Reassign dash function when character respawns
+end
+
+-- Listen for character respawns
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Initial setup for when the script first runs
+if character then
+    setupDash()
+end
