@@ -1,0 +1,173 @@
+-- Services
+local userInputService = game:GetService("UserInputService")
+local players = game:GetService("Players")
+local runService = game:GetService("RunService")
+local camera = game.Workspace.CurrentCamera
+
+-- Local player
+local player = players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Variables
+local cameraShifted = false
+local holdingRightClick = false
+local cursorIcon = nil
+local rotating = false
+local controlDisabled = false -- Variable to track if rotation control is disabled
+
+-- Function to shift the camera to the right
+local function shiftCameraRight()
+    if cameraShifted then return end -- Prevent multiple shifts
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    -- Shift camera by 5 units to the right relative to the character's position
+    local cameraOffset = Vector3.new(5, 0, 0)
+    camera.CFrame = humanoidRootPart.CFrame + cameraOffset
+    cameraShifted = true
+end
+
+-- Function to reset the camera to default
+local function resetCamera()
+    if not cameraShifted then return end
+    camera.CFrame = player.Character.HumanoidRootPart.CFrame
+    cameraShifted = false
+end
+
+-- Function to create and change the mouse cursor to a hollow triangle
+local function createCustomCursor()
+    cursorIcon = Drawing.new("Triangle")
+    cursorIcon.Thickness = 2
+    cursorIcon.Color = Color3.new(1, 1, 1)
+    cursorIcon.Transparency = 1
+    cursorIcon.Visible = true
+end
+
+-- Function to remove the custom cursor
+local function removeCustomCursor()
+    if cursorIcon then
+        cursorIcon:Remove()
+        cursorIcon = nil
+        userInputService.MouseIconEnabled = true
+    end
+end
+
+-- Function to update the custom cursor
+local function updateCustomCursor()
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    runService.RenderStepped:Connect(function()
+        if cursorIcon then
+            local offset = Vector2.new(20, 20) -- Adjust this value to change the size of the triangle
+            -- Draw the triangle centered on the screen
+            cursorIcon.PointA = screenCenter
+            cursorIcon.PointB = screenCenter + offset
+            cursorIcon.PointC = screenCenter + Vector2.new(-offset.X, offset.Y)
+        end
+    end)
+    -- Hide the default mouse icon
+    userInputService.MouseIconEnabled = false
+end
+
+-- Function to prevent the character from looking downward
+local function clampUpwardOnly(direction)
+    -- Ensure the character can only look forward or up (Y-axis >= 0)
+    if direction.Y < 0 then
+        -- Force the Y component to be 0 or higher (no downward rotation)
+        direction = Vector3.new(direction.X, 0, direction.Z).unit
+    end
+    return direction
+end
+
+-- Function to disable rotation control for a specified time
+local function disableControlForTime(duration)
+    controlDisabled = true
+    wait(duration)
+    controlDisabled = false
+end
+
+-- Function to rotate player to face mouse cursor position with downward rotation blocked
+local function rotateToMouse()
+    if controlDisabled then return end -- Skip rotation if control is disabled
+
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+    local humanoidRootPart = player.Character.HumanoidRootPart
+
+    -- Get the 3D position where the mouse is pointing
+    local mouseHitPosition = mouse.Hit.p
+
+    -- Calculate the direction from the player's position to the mouse position
+    local direction = (mouseHitPosition - humanoidRootPart.Position).unit
+
+    -- Block any downward rotation
+    direction = clampUpwardOnly(direction)
+
+    -- Update player's rotation to face the clamped direction
+    humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, humanoidRootPart.Position + direction)
+end
+
+-- Function to simulate holding right mouse button
+local function simulateRightClick()
+    holdingRightClick = true
+    userInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+end
+
+-- Function to stop holding right mouse button
+local function stopRightClick()
+    holdingRightClick = false
+    userInputService.MouseBehavior = Enum.MouseBehavior.Default
+end
+
+-- Toggle the camera shift, cursor, and right-click when '-' key is pressed
+local function toggleCameraAndCursor()
+    if not cameraShifted then
+        shiftCameraRight()
+        createCustomCursor()
+        updateCustomCursor()
+        simulateRightClick()
+    else
+        resetCamera()
+        removeCustomCursor()
+        stopRightClick()
+    end
+end
+
+-- Bind to '-' key press to toggle camera shift, custom cursor, and right-click hold
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Minus then
+        toggleCameraAndCursor()
+    end
+end)
+
+-- Handle key press to disable control over rotation for specified durations
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.One then
+        disableControlForTime(1) -- Disable control for 1 second when "1" is pressed
+    elseif input.KeyCode == Enum.KeyCode.Two then
+        disableControlForTime(2.3) -- Disable control for 2 seconds when "2" is pressed
+    elseif input.KeyCode == Enum.KeyCode.Three then
+        disableControlForTime(1) -- Disable control for 1 second when "3" is pressed
+    elseif input.KeyCode == Enum.KeyCode.Four then
+        disableControlForTime(1) -- Disable control for 1 second when "4" is pressed
+    end
+end)
+
+-- Ensure right-click is released properly when the mouse button is released
+userInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        stopRightClick()
+    end
+end)
+
+-- Handle right-click holding
+userInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        simulateRightClick()
+    end
+end)
+
+-- Update the player's rotation to face the mouse cursor, with downward rotation blocked
+runService.RenderStepped:Connect(function()
+    if holdingRightClick then
+        rotateToMouse()
+    end
+end)
