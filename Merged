@@ -1,6 +1,166 @@
--- Example Script for combining multiple scripts
+-- Lua Script with UI to toggle scripts on/off
 
-local function script1()
+local UserInputService = game:GetService('UserInputService')
+local StarterGui = game:GetService('StarterGui')
+local Players = game:GetService('Players')
+local LocalPlayer = Players.LocalPlayer
+local function onCharacterAdded(character)
+    local ScreenGui = Instance.new('ScreenGui')
+    local Frame = Instance.new('Frame')
+    ScreenGui.Parent = LocalPlayer:WaitForChild('PlayerGui')
+    Frame.Parent = ScreenGui
+    Frame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    Frame.Size = UDim2.new(0, 300, 0, 400)
+    Frame.Position = UDim2.new(0.5, -150, 0.5, -200)
+
+-- Toggle UI visibility with Right Ctrl
+    local uiVisible = true
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.RightControl then
+            uiVisible = not uiVisible
+            Frame.Visible = uiVisible
+        end
+    end)
+
+-- Toggle button for ExtendedDash.lua
+    local ToggleButton_1 = Instance.new('TextButton')
+    ToggleButton_1.Parent = Frame
+    ToggleButton_1.Size = UDim2.new(0, 200, 0, 50)
+    ToggleButton_1.Position = UDim2.new(0, 50, 0, 0)
+    ToggleButton_1.Text = 'Toggle ExtendedDash.lua'
+
+    local Script_1_enabled = false
+    ToggleButton_1.MouseButton1Click:Connect(function()
+        Script_1_enabled = not Script_1_enabled
+        if Script_1_enabled then
+            print('Running ExtendedDash.lua')
+            -- Start of ExtendedDash.lua
+-- Variables for player and dash parameters
+local player = game.Players.LocalPlayer
+local dashSpeed = 120 -- Speed of the dash
+local dashDuration = 0.2 -- Duration of the dash (in seconds)
+local cooldown = 1 -- Cooldown between dashes (in seconds)
+
+-- Variables to track the character and humanoidRootPart
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Function to handle dashing
+local function dash()
+    local startTime = tick()
+    local dashDirection = humanoidRootPart.CFrame.lookVector -- Direction the player is facing
+    local connection
+
+    connection = game:GetService("RunService").Heartbeat:Connect(function()
+        local currentTime = tick()
+        if currentTime - startTime <= dashDuration then
+            humanoidRootPart.Velocity = dashDirection * dashSpeed
+        else
+            humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Stop dashing after the duration
+            connection:Disconnect()
+        end
+    end)
+end
+
+-- Debounce to prevent spamming
+local canDash = true
+
+-- Keybind for dashing (pressing "Q")
+local function setupDash()
+    game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Q and canDash then
+            canDash = false
+            dash()
+            wait(cooldown) -- Wait for the cooldown duration
+            canDash = true
+        end
+    end)
+end
+
+-- Function to initialize dash when character spawns or respawns
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+    setupDash() -- Reassign dash function when character respawns
+end
+
+-- Listen for character respawns
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Initial setup for when the script first runs
+if character then
+    setupDash()
+end
+
+            -- End of ExtendedDash.lua
+        else
+            print('Stopped ExtendedDash.lua')
+        end
+    end)
+
+-- Toggle button for NoStun.lua
+    local ToggleButton_2 = Instance.new('TextButton')
+    ToggleButton_2.Parent = Frame
+    ToggleButton_2.Size = UDim2.new(0, 200, 0, 50)
+    ToggleButton_2.Position = UDim2.new(0, 50, 0, 50)
+    ToggleButton_2.Text = 'Toggle NoStun.lua'
+
+    local Script_2_enabled = false
+    ToggleButton_2.MouseButton1Click:Connect(function()
+        Script_2_enabled = not Script_2_enabled
+        if Script_2_enabled then
+            print('Running NoStun.lua')
+            -- Start of NoStun.lua
+-- Services
+local userInputService = game:GetService("UserInputService")
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Function to always enable movement
+local function ensureMovementEnabled()
+    if character and character:FindFirstChild("Humanoid") then
+        local humanoid = character.Humanoid
+        humanoid.WalkSpeed = 35 -- Default Roblox walking speed
+        humanoid.JumpPower = 50 -- Default Roblox jump power
+    end
+end
+
+-- Monitor if movement ever gets disabled and re-enable it
+local function monitorMovement()
+    while true do
+        ensureMovementEnabled()
+        wait(0.1) -- Check every 0.1 seconds
+    end
+end
+
+-- Start monitoring movement
+spawn(monitorMovement)
+
+-- If the character respawns, reapply the movement enabling
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    monitorMovement()
+end)
+
+            -- End of NoStun.lua
+        else
+            print('Stopped NoStun.lua')
+        end
+    end)
+
+-- Toggle button for RankedCameraFixer.lua
+    local ToggleButton_3 = Instance.new('TextButton')
+    ToggleButton_3.Parent = Frame
+    ToggleButton_3.Size = UDim2.new(0, 200, 0, 50)
+    ToggleButton_3.Position = UDim2.new(0, 50, 0, 100)
+    ToggleButton_3.Text = 'Toggle RankedCameraFixer.lua'
+
+    local Script_3_enabled = false
+    ToggleButton_3.MouseButton1Click:Connect(function()
+        Script_3_enabled = not Script_3_enabled
+        if Script_3_enabled then
+            print('Running RankedCameraFixer.lua')
+            -- Start of RankedCameraFixer.lua
 -- Services
 local userInputService = game:GetService("UserInputService")
 local players = game:GetService("Players")
@@ -175,85 +335,25 @@ runService.RenderStepped:Connect(function()
     end
 end)
 
-end
-
-local function script2()
-local HttpService = game:GetService("HttpService")
-local url = "https://github.com/ScienceboyZ/PROJECT_MASH_POTATOES/blob/main/ExtendedDash" -- Replace with your script URL
-
-local success, result = pcall(function()
-    return HttpService:GetAsync(url)
-end)
-
-if success then
-    loadstring(result)()
-else
-    warn("Failed to load script: " .. result)
-end
-
-end
-
-local function script3()
--- Variables for player and dash parameters
-local player = game.Players.LocalPlayer
-local dashSpeed = 120 -- Speed of the dash
-local dashDuration = 0.2 -- Duration of the dash (in seconds)
-local cooldown = 1 -- Cooldown between dashes (in seconds)
-
--- Variables to track the character and humanoidRootPart
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
--- Function to handle dashing
-local function dash()
-    local startTime = tick()
-    local dashDirection = humanoidRootPart.CFrame.lookVector -- Direction the player is facing
-    local connection
-
-    connection = game:GetService("RunService").Heartbeat:Connect(function()
-        local currentTime = tick()
-        if currentTime - startTime <= dashDuration then
-            humanoidRootPart.Velocity = dashDirection * dashSpeed
+            -- End of RankedCameraFixer.lua
         else
-            humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Stop dashing after the duration
-            connection:Disconnect()
+            print('Stopped RankedCameraFixer.lua')
         end
     end)
-end
 
--- Debounce to prevent spamming
-local canDash = true
+-- Toggle button for ZeusStormChargeAimbot.lua
+    local ToggleButton_4 = Instance.new('TextButton')
+    ToggleButton_4.Parent = Frame
+    ToggleButton_4.Size = UDim2.new(0, 200, 0, 50)
+    ToggleButton_4.Position = UDim2.new(0, 50, 0, 150)
+    ToggleButton_4.Text = 'Toggle ZeusStormChargeAimbot.lua'
 
--- Keybind for dashing (pressing "Q")
-local function setupDash()
-    game:GetService("UserInputService").InputBegan:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.Q and canDash then
-            canDash = false
-            dash()
-            wait(cooldown) -- Wait for the cooldown duration
-            canDash = true
-        end
-    end)
-end
-
--- Function to initialize dash when character spawns or respawns
-local function onCharacterAdded(newCharacter)
-    character = newCharacter
-    humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
-    setupDash() -- Reassign dash function when character respawns
-end
-
--- Listen for character respawns
-player.CharacterAdded:Connect(onCharacterAdded)
-
--- Initial setup for when the script first runs
-if character then
-    setupDash()
-end
-
-end
-
-local function script4()
+    local Script_4_enabled = false
+    ToggleButton_4.MouseButton1Click:Connect(function()
+        Script_4_enabled = not Script_4_enabled
+        if Script_4_enabled then
+            print('Running ZeusStormChargeAimbot.lua')
+            -- Start of ZeusStormChargeAimbot.lua
 -- Services
 local players = game:GetService("Players")
 local userInputService = game:GetService("UserInputService")
@@ -369,17 +469,15 @@ localPlayer.CharacterAdded:Connect(function()
     locking = false -- Reset locking state when character respawns
 end)
 
-end
+            -- End of ZeusStormChargeAimbot.lua
+        else
+            print('Stopped ZeusStormChargeAimbot.lua')
+        end
+    end)
 
--- Example of calling the functions based on key input or events
-userInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.One then
-        script1()
-    elseif input.KeyCode == Enum.KeyCode.Two then
-        script2()
-    elseif input.KeyCode == Enum.KeyCode.Three then
-        script3()
-    elseif input.KeyCode == Enum.KeyCode.Four then
-        script4()
-    end
-end)
+end
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+-- Initialize the UI for the first time
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
