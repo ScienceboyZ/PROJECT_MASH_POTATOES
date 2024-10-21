@@ -1,0 +1,385 @@
+-- Example Script for combining multiple scripts
+
+local function script1()
+-- Services
+local userInputService = game:GetService("UserInputService")
+local players = game:GetService("Players")
+local runService = game:GetService("RunService")
+local camera = game.Workspace.CurrentCamera
+
+-- Local player
+local player = players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Variables
+local cameraShifted = false
+local holdingRightClick = false
+local cursorIcon = nil
+local rotating = false
+local controlDisabled = false -- Variable to track if rotation control is disabled
+
+-- Function to shift the camera to the right
+local function shiftCameraRight()
+    if cameraShifted then return end -- Prevent multiple shifts
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    -- Shift camera by 5 units to the right relative to the character's position
+    local cameraOffset = Vector3.new(5, 0, 0)
+    camera.CFrame = humanoidRootPart.CFrame + cameraOffset
+    cameraShifted = true
+end
+
+-- Function to reset the camera to default
+local function resetCamera()
+    if not cameraShifted then return end
+    camera.CFrame = player.Character.HumanoidRootPart.CFrame
+    cameraShifted = false
+end
+
+-- Function to create and change the mouse cursor to a hollow triangle
+local function createCustomCursor()
+    cursorIcon = Drawing.new("Triangle")
+    cursorIcon.Thickness = 2
+    cursorIcon.Color = Color3.new(1, 1, 1)
+    cursorIcon.Transparency = 1
+    cursorIcon.Visible = true
+end
+
+-- Function to remove the custom cursor
+local function removeCustomCursor()
+    if cursorIcon then
+        cursorIcon:Remove()
+        cursorIcon = nil
+        userInputService.MouseIconEnabled = true
+    end
+end
+
+-- Function to update the custom cursor
+local function updateCustomCursor()
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    runService.RenderStepped:Connect(function()
+        if cursorIcon then
+            local offset = Vector2.new(20, 20) -- Adjust this value to change the size of the triangle
+            -- Draw the triangle centered on the screen
+            cursorIcon.PointA = screenCenter
+            cursorIcon.PointB = screenCenter + offset
+            cursorIcon.PointC = screenCenter + Vector2.new(-offset.X, offset.Y)
+        end
+    end)
+    -- Hide the default mouse icon
+    userInputService.MouseIconEnabled = false
+end
+
+-- Function to prevent the character from looking downward
+local function clampUpwardOnly(direction)
+    -- Ensure the character can only look forward or up (Y-axis >= 0)
+    if direction.Y < 0 then
+        -- Force the Y component to be 0 or higher (no downward rotation)
+        direction = Vector3.new(direction.X, 0, direction.Z).unit
+    end
+    return direction
+end
+
+-- Function to disable rotation control for a specified time
+local function disableControlForTime(duration)
+    controlDisabled = true
+    wait(duration)
+    controlDisabled = false
+end
+
+-- Function to rotate player to face mouse cursor position with downward rotation blocked
+local function rotateToMouse()
+    if controlDisabled then return end -- Skip rotation if control is disabled
+
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+    local humanoidRootPart = player.Character.HumanoidRootPart
+
+    -- Get the 3D position where the mouse is pointing
+    local mouseHitPosition = mouse.Hit.p
+
+    -- Calculate the direction from the player's position to the mouse position
+    local direction = (mouseHitPosition - humanoidRootPart.Position).unit
+
+    -- Block any downward rotation
+    direction = clampUpwardOnly(direction)
+
+    -- Update player's rotation to face the clamped direction
+    humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, humanoidRootPart.Position + direction)
+end
+
+-- Function to simulate holding right mouse button
+local function simulateRightClick()
+    holdingRightClick = true
+    userInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+end
+
+-- Function to stop holding right mouse button
+local function stopRightClick()
+    holdingRightClick = false
+    userInputService.MouseBehavior = Enum.MouseBehavior.Default
+end
+
+-- Toggle the camera shift, cursor, and right-click when '-' key is pressed
+local function toggleCameraAndCursor()
+    if not cameraShifted then
+        shiftCameraRight()
+        createCustomCursor()
+        updateCustomCursor()
+        simulateRightClick()
+    else
+        resetCamera()
+        removeCustomCursor()
+        stopRightClick()
+    end
+end
+
+-- Bind to '-' key press to toggle camera shift, custom cursor, and right-click hold
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Minus then
+        toggleCameraAndCursor()
+    end
+end)
+
+-- Handle key press to disable control over rotation for specified durations
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.One then
+        disableControlForTime(1) -- Disable control for 1 second when "1" is pressed
+    elseif input.KeyCode == Enum.KeyCode.Two then
+        disableControlForTime(2.3) -- Disable control for 2 seconds when "2" is pressed
+    elseif input.KeyCode == Enum.KeyCode.Three then
+        disableControlForTime(1) -- Disable control for 1 second when "3" is pressed
+    elseif input.KeyCode == Enum.KeyCode.Four then
+        disableControlForTime(1) -- Disable control for 1 second when "4" is pressed
+    end
+end)
+
+-- Ensure right-click is released properly when the mouse button is released
+userInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        stopRightClick()
+    end
+end)
+
+-- Handle right-click holding
+userInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        simulateRightClick()
+    end
+end)
+
+-- Update the player's rotation to face the mouse cursor, with downward rotation blocked
+runService.RenderStepped:Connect(function()
+    if holdingRightClick then
+        rotateToMouse()
+    end
+end)
+
+end
+
+local function script2()
+local HttpService = game:GetService("HttpService")
+local url = "https://github.com/ScienceboyZ/PROJECT_MASH_POTATOES/blob/main/ExtendedDash" -- Replace with your script URL
+
+local success, result = pcall(function()
+    return HttpService:GetAsync(url)
+end)
+
+if success then
+    loadstring(result)()
+else
+    warn("Failed to load script: " .. result)
+end
+
+end
+
+local function script3()
+-- Variables for player and dash parameters
+local player = game.Players.LocalPlayer
+local dashSpeed = 120 -- Speed of the dash
+local dashDuration = 0.2 -- Duration of the dash (in seconds)
+local cooldown = 1 -- Cooldown between dashes (in seconds)
+
+-- Variables to track the character and humanoidRootPart
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Function to handle dashing
+local function dash()
+    local startTime = tick()
+    local dashDirection = humanoidRootPart.CFrame.lookVector -- Direction the player is facing
+    local connection
+
+    connection = game:GetService("RunService").Heartbeat:Connect(function()
+        local currentTime = tick()
+        if currentTime - startTime <= dashDuration then
+            humanoidRootPart.Velocity = dashDirection * dashSpeed
+        else
+            humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Stop dashing after the duration
+            connection:Disconnect()
+        end
+    end)
+end
+
+-- Debounce to prevent spamming
+local canDash = true
+
+-- Keybind for dashing (pressing "Q")
+local function setupDash()
+    game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Q and canDash then
+            canDash = false
+            dash()
+            wait(cooldown) -- Wait for the cooldown duration
+            canDash = true
+        end
+    end)
+end
+
+-- Function to initialize dash when character spawns or respawns
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+    setupDash() -- Reassign dash function when character respawns
+end
+
+-- Listen for character respawns
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Initial setup for when the script first runs
+if character then
+    setupDash()
+end
+
+end
+
+local function script4()
+-- Services
+local players = game:GetService("Players")
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+
+-- Local player
+local localPlayer = players.LocalPlayer
+local locking = false
+local moving = false
+
+-- Function to find the nearest player
+local function findNearestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+
+    -- Get the local player's character and position
+    local localCharacter = localPlayer.Character
+    if not localCharacter or not localCharacter:FindFirstChild("HumanoidRootPart") then return nil end
+    local localPosition = localCharacter.HumanoidRootPart.Position
+
+    -- Loop through all players to find the closest one
+    for _, player in pairs(players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local playerPosition = player.Character.HumanoidRootPart.Position
+            local distance = (localPosition - playerPosition).Magnitude
+
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closestPlayer = player
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+-- Function to adjust the start delay based on the distance
+local function getStartDelay(distance)
+    if distance >= 60 then
+        return 0
+    elseif distance > 20 then
+        return 0.2
+    else
+        return 0.2
+    end
+end
+
+-- Failsafe timer function to stop movement after 4 seconds
+local function stopFollowingAfterTime(connection, startTime)
+    local currentTime = tick()
+    if currentTime - startTime >= 4 then
+        -- Stop following after 4 seconds
+        if connection then connection:Disconnect() end
+        locking = false
+    end
+end
+
+-- Function to rotate the local player to face the nearest player and move towards them with a delay
+local function lockAndMoveToNearestPlayer()
+    if locking then return end -- Prevent re-triggering while already locking
+
+    local nearestPlayer = findNearestPlayer()
+    if nearestPlayer and nearestPlayer.Character and nearestPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local nearestHRP = nearestPlayer.Character.HumanoidRootPart
+        local localCharacter = localPlayer.Character
+
+        if localCharacter and localCharacter:FindFirstChild("HumanoidRootPart") then
+            locking = true
+
+            -- Start the movement process with a failsafe
+            local startTime = tick()
+            local connection
+            connection = runService.RenderStepped:Connect(function()
+                -- Calculate distance between the local player and the nearest player
+                local distance = (localCharacter.HumanoidRootPart.Position - nearestHRP.Position).Magnitude
+
+                -- Stop movement if too close (touching) or after 4 seconds
+                stopFollowingAfterTime(connection, startTime)
+
+                if distance <= 2.6 then
+                    -- Stop moving if within touching distance
+                    connection:Disconnect()
+                    locking = false
+                else
+                    -- Lock the player's rotation to face the nearest player
+                    localCharacter.HumanoidRootPart.CFrame = CFrame.new(localCharacter.HumanoidRootPart.Position, nearestHRP.Position)
+
+                    -- Get the start delay based on distance
+                    local startDelay = getStartDelay(distance)
+
+                    -- Move towards the enemy with delay
+                    delay(startDelay, function()
+                        if connection.Connected then
+                            local moveDirection = (nearestHRP.Position - localCharacter.HumanoidRootPart.Position).unit
+                            localCharacter.HumanoidRootPart.CFrame = localCharacter.HumanoidRootPart.CFrame + moveDirection * 1
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+end
+
+-- Detect when the "Q" key is pressed to start moving towards the nearest player
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Three then
+        lockAndMoveToNearestPlayer()
+    end
+end)
+
+-- Ensure the script reactivates when the player's character resets
+localPlayer.CharacterAdded:Connect(function()
+    locking = false -- Reset locking state when character respawns
+end)
+
+end
+
+-- Example of calling the functions based on key input or events
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.One then
+        script1()
+    elseif input.KeyCode == Enum.KeyCode.Two then
+        script2()
+    elseif input.KeyCode == Enum.KeyCode.Three then
+        script3()
+    elseif input.KeyCode == Enum.KeyCode.Four then
+        script4()
+    end
+end)
